@@ -7,18 +7,22 @@ import time
 
 
 # Folder Pointers
-file_r_folder = 'test_read_data/'  # read from here
-file_w_folder = 'test_write_data/'  # write to here
-#file_r_folder = 'data/'  # read from here
-#file_w_folder = 'write_data/'  # write to here
+#file_r_folder = 'test_read_data/'  # read from here
+#file_w_folder = 'test_write_data/'  # write to here
+file_r_folder = 'data/'  # read from here
+file_w_folder = 'write_data/'  # write to here
 
 
-header = ['datetime', 'register_no', 'emp_no', 'trans_no', 'upc', 'description', 'trans_type', 'trans_subtype',
-            'trans_status', 'department', 'quantity', 'Scale', 'cost', 'unitPrice', 'total', 'regPrice', 'altPrice',
-            'tax', 'taxexempt', 'foodstamp', 'wicable', 'discount', 'memDiscount', 'discountable', 'discounttype',
-            'voided', 'percentDiscount', 'ItemQtty', 'volDiscType', 'volume', 'VolSpecial', 'mixMatch', 'matched',
-            'memType', 'staff', 'numflag', 'itemstatus', 'tenderstatus', 'charflag', 'varflag', 'batchHeaderID',
-            'local', 'organic', 'display', 'receipt', 'card_no', 'store', 'branch', 'match_id', 'trans_id']
+header = ['datetime', 'register_no', 'emp_no', 'trans_no', 'upc',
+          'description', 'trans_type', 'trans_subtype', 'trans_status', 'department',
+          'quantity', 'Scale', 'cost', 'unitPrice', 'total',
+          'regPrice', 'altPrice', 'tax', 'taxexempt', 'foodstamp',
+          'wicable', 'discount', 'memDiscount', 'discountable', 'discounttype',
+            'voided', 'percentDiscount', 'ItemQtty', 'volDiscType', 'volume',
+          'VolSpecial', 'mixMatch', 'matched', 'memType', 'staff',
+          'numflag', 'itemstatus', 'tenderstatus', 'charflag', 'varflag',
+          'batchHeaderID', 'local', 'organic', 'display', 'receipt',
+          'card_no', 'store', 'branch', 'match_id', 'trans_id']
 
 
 holding_dict = defaultdict(list)
@@ -28,17 +32,8 @@ errors_dict = defaultdict(list)
 counter_dict = defaultdict(int)
 
 
-# Clean out the write to folder before we begin
-# write_folder = os.listdir(file_w_folder)
-# for this_file in write_folder:
-#    this_file = ("{}{}".format(file_w_folder,this_file))
-#    os.remove(this_file)
-# time.sleep(5)
-
-
-# finds what the delimiters are for each file
-delimiters = dict()
 zip_files = os.listdir(file_r_folder)
+delimiters = dict()
 for this_zf in zip_files:
     with ZipFile(file_r_folder + this_zf, 'r') as zf:
         zipped_files = zf.namelist()
@@ -49,6 +44,62 @@ for this_zf in zip_files:
                                           delimiters=[",", ";", "\t"])
         delimiters[file_name] = dialect.delimiter
         input_file.close()  # tidy up
+
+
+def clear_w_folder():
+    # Clean out the write to folder before we begin
+    write_folder = os.listdir(file_w_folder)
+    for this_file in write_folder:
+        this_file = ("{}{}".format(file_w_folder, this_file))
+        os.remove(this_file)
+    time.sleep(5)
+
+
+def run_command_prompt():
+    print("\n\n")
+    print("Hello, and welcome!")
+    write_folder_len = len(os.listdir(file_w_folder))
+    if write_folder_len > 0:
+        time.sleep(1)
+        print("Before we get started, I need to take care of a few housekeeping items.")
+        time.sleep(1)
+        print("It looks like you have {} files in the 'WRITE TO ' location:\t\t*** {} ***".format(write_folder_len, file_w_folder))
+        time.sleep(1)
+        while True:
+            try:
+                to_clear = input("\nDo you want me to REMOVE these files? (Y/N)   : ").lower()
+                time.sleep(1)
+                if to_clear == 'y' or to_clear== 'yes':
+                    while True:
+                        confirm = input("Are you sure you want to DELETE these files permanently? (Y/N)   : ").lower()
+                        try:
+                            if confirm == 'y' or confirm == 'yes':
+                                for i in [3,2,1]:
+                                    time.sleep(1)
+                                    print("\t\t\t\t{}".format(i))
+                                clear_w_folder()
+                                time.sleep(1)
+                                print("Your files have been successfully deleted.")
+                                break
+                            elif confirm == 'n' or confirm == 'no':
+                                print("\n\n")
+                                break
+                            else:
+                                print("Sorry, I didn't understand that.")
+                                continue
+                        except ValueError:
+                            print("error")
+                elif to_clear == 'n' or to_clear == 'no':
+                    print("\n\n")
+                    break
+                else:
+                    print("Sorry, I didn't understand that.")
+                    continue
+            except ValueError:
+                print("error")
+            print("\nThank You.\n")
+            print("\nStarting Run\n")
+            break
 
 
 def remove_quotes(lists):
@@ -72,11 +123,14 @@ def remove_quotes(lists):
 def irregular_line_fix(irregular_line):
     # Fixes error that happens when the 'description' has "," within.
     # irregular_line = the line that has multiple "," within it.
-    description_fix = irregular_line[5:8]
+    line_length = len(irregular_line)
+    y = line_length - 49 + 5
+    description_fix = irregular_line[5:y]
     word = ",".join(description_fix)
     word = word.strip('"')
     irregular_line.insert(5, word)
-    del irregular_line[6:9]
+    y = line_length - 49 + 6
+    del irregular_line[6:y]
     return irregular_line
 
 
@@ -117,6 +171,39 @@ def hold_this(mod, line, write_when):
         holding_dict[mod].append(line)  # puts the line in holding cell
 
 
+def eff_prepare_rows(idx, line, input_file, this_delimiter, write_when):
+    line_length = len(line)
+    quarter = ''
+    if line_length != 50:
+        irregular_line_fix(line)
+        this_error = [("*** IRREGULAR LINE ***\t\tFILE:  {}\t\tIDX:  {}".format(file_name, idx))]
+        errors_dict[input_file].append(this_error)
+    else:
+        pass
+    if line[45:46] != ['card_no'] and line[45:46] != ['3']:  # Will pass all items that are not card #3.
+        cardNo = int(line[45])
+        mod = cardNo % 171 + 1
+        hold_this(mod, line, write_when)
+    elif line[45:46] != ['card_no']:  # This code will designate what to do with 'card_no'== 3
+        date = line[0]
+        year = str(date[2:4])
+        month = int(date[5:7])
+        if 1 <= month <= 3:
+            quarter = '01'
+        elif 4 <= month <= 6:
+            quarter = '02'
+        elif 7 <= month <= 9:
+            quarter = '03'
+        elif 10 <= month <= 12:
+            quarter = '04'
+        else:
+            this_error = [("*** ERROR ON QUARTER ***\nFILE:  {}\nIDX:  {}".format(input_file, idx))]
+            errors_dict[input_file].append(this_error)
+        mod = (year + quarter)
+        mod = int(mod)
+        hold_this(mod, line, write_when)
+
+
 def prepare_rows(idx, line, input_file, this_delimiter, write_when):
     line_length = len(line)
     if line_length != 50:
@@ -124,12 +211,11 @@ def prepare_rows(idx, line, input_file, this_delimiter, write_when):
         this_error = [("*** IRREGULAR LINE ***\t\tFILE:  {}\t\tIDX:  {}".format(file_name, idx))]
         errors_dict[input_file].append(this_error)
     else:
-        this_error = [("*** IRREGULAR LINE ***\t\tFILE:  {}\t\tIDX:  {}".format(file_name, idx))]
-        errors_dict[input_file].append(this_error)
+        pass
     if line[45:46] != ['card_no']:  # Will pass all items that are not card #3.
         if line[45:46] != ['3']:  # This will sort, place in holding, and save the row.
             cardNo = int(line[45])
-            mod = cardNo % 200 + 1
+            mod = cardNo % 171 + 1
             hold_this(mod, line, write_when)
         else:  # This code will designate what to do with 'card_no'== 3
             date = line[0]
@@ -160,19 +246,19 @@ def purge_save_holding(holding_dict):
     for idx, mod in enumerate(last_holdings):
         the_file = holding_dict[mod]
         save_this(the_file, mod)
+        time.sleep(.25)
         del holding_dict[mod]
+        time.sleep(.25)
 
 
-def process_files(zip_files = zip_files, write_when = 15000):
+def row_irregularity_checker():
     # zip_files = are the files folder names that you would like to pass through this.
-    # write_when = When this number of row is reached, the holding dict will save the rows to file
-    # row_stop = use None for production, and any other number to stop after that number of rows.
-    # Function that finds what the delimiters are for each file
     start_time = time.localtime()
     start_time = (time.strftime("%Y-%m-%d %H:%M:%S", start_time))
     time_dict.update({'Overall\t\t\t\t\t\t': {'Start': start_time}})
+    zip_files = os.listdir('test_read_data/')
     for this_zf in zip_files:
-        with ZipFile(file_r_folder + this_zf, 'r') as zf:
+        with ZipFile('test_read_data/' + this_zf, 'r') as zf:
             zipped_files = zf.namelist()
             for file_name in zipped_files:
                 input_file = zf.open(file_name, 'r')
@@ -180,14 +266,22 @@ def process_files(zip_files = zip_files, write_when = 15000):
                 this_delimiter = delimiters[file_name]
                 file_start_time = time.localtime()
                 file_start_time = (time.strftime("%Y-%m-%d %H:%M:%S", file_start_time))
-                print("")
-                print("FILE:\t{}\n\t\t\t\t\t\t\t\t\tSTART TIME:\t{}".format(file_name, file_start_time))
+                print("\nFILE:\t{}\n\t\t\t\t\t\t\t\t\tSTART TIME:\t{}".format(file_name, file_start_time))
                 for idx, line in enumerate(input_file):
                     line = (line.strip().split(this_delimiter))
                     line = remove_quotes(line)  # Remove "'Double Quotes'"
-                    prepare_rows(idx, line, input_file, this_delimiter, write_when)
-                    if idx >= 100:
-                        break
+                    line_length = len(line)
+                    if line_length != 50:
+                        print(len(line))
+                        print(line)
+                        this_error = [("*** IRREGULAR LINE BEFORE ***\t\tFILE:  {}\t\tIDX:  {}\n{}".format(file_name, idx,line))]
+                        errors_dict[input_file].append(this_error)
+                        irregular_line_fix(line)
+                        print("")
+                        print(len(line))
+                        print(line)
+                        this_error = [("*** IRREGULAR LINE AFTER ***\t\tFILE:  {}\t\tIDX:  {}\n{}".format(file_name, idx,line))]
+                        errors_dict[input_file].append(this_error)
                     else:
                         pass
                 input_file.close()
@@ -195,52 +289,73 @@ def process_files(zip_files = zip_files, write_when = 15000):
             file_end_time = (time.strftime("%Y-%m-%d %H:%M:%S", file_end_time))
             time_dict.update({file_name: {'Start': file_start_time, 'End': file_end_time}})
             print("\t\t\t\t\t\t\t\t\tEND TIME:\t{}".format(file_end_time))
-    purge_save_holding(holding_dict)
     end_time = time.localtime()
-    print("")
-    print("")
-    print("*** DONE ***")
-    print("")
-    print("")
+    print("\n\n*** DONE ***\n\n")
     end_time = (time.strftime("%Y-%m-%d %H:%M:%S", end_time))
     time_dict.update({'Overall\t\t\t\t\t\t': {'Start': start_time, 'End': end_time}})
 
 
-process_files(zip_files, 15000)
-# This will run the function above
-#       zip_files = are the files folder names that you would like to pass through this.
-#       write_when = When this number of row is reached, the holding dict will save the rows to file
+def file_start_time_stamp(file_name):
+    this_time = time.localtime()
+    this_time = (time.strftime("%Y-%m-%d %H:%M:%S", this_time))
+    time_dict.update({file_name: {'Time Start': this_time}})
+    print("File: {}\tStart Time: {}".format(file_name, this_time))
+
+
+def process_files(zip_files = zip_files, write_when = 15000):
+    # zip_files = are the files folder names that you would like to pass through this.
+    # write_when = When this number of row is reached, the holding dict will save the rows to file
+    # row_stop = use None for production, and any other number to stop after that number of rows.
+    # Function that finds what the delimiters are for each file
+    for this_zf in zip_files:
+        with ZipFile(file_r_folder + this_zf, 'r') as zf:
+            zipped_files = zf.namelist()
+            for file_name in zipped_files:
+                input_file = zf.open(file_name, 'r')
+                input_file = io.TextIOWrapper(input_file, encoding="utf-8")
+                this_delimiter = delimiters[file_name]
+                file_start_time_stamp(file_name)
+                for idx, line in enumerate(input_file):
+                    line = (line.strip().split(this_delimiter))
+                    line = remove_quotes(line)  # Remove "'Double Quotes'"
+                    eff_prepare_rows(idx, line, input_file, this_delimiter, write_when)
+                    if file_r_folder == 'data/' and idx >= 20000:
+                        break
+                    else:
+                        pass
+                input_file.close()
+    purge_save_holding(holding_dict)
+    print("\n*** DONE ***")
 
 
 def run_info():
     print("\t*** FILE NAME *** \t\t\t\t\t*** Total Rows In File ***")
     for key, value in counter_dict.items():
         print("File:  WedgeFile_{}.csv\t\t\t\tTotal Rows:  {}".format(format(int(key), "04"), format(int(value), "03")))
-    print("")
-    print("")
-    print("\t*** FILE NAME *** \t\t\t\t\t*** Total Times File Was Opened & Saved To ***")
+    print("\n\n\t*** FILE NAME *** \t\t\t\t\t*** Total Times File Was Opened & Saved To ***")
     for key, value in written_to_dict.items():
         print("FILE:  {}\t\t\t\tTimes Opened to Save: {}".format(key,value))
-    print("")
-    print("")
-    print("\t*** FILE NAME *** \t\t\t\t\t\t\t\t\t*** START PROCESSING TIME ***\t\t*** END PROCESSING TIME ***")
+    print("\n\n\t*** FILE NAME *** \t\t\t\t\t\t\t\t\t*** START PROCESSING TIME ***\t\t*** END PROCESSING TIME ***")
     for key, value in time_dict.items():
         print("FILE:  {}\t\t\t\t\t\t\t\t{}".format(key,value))
+
+
+def error_info():
+    print("\n\n\t*** *** ERROR REPORT *** ***")
+    for key, value in errors_dict.items():
+        print("File:  {}\t\t\t\tERROR:  {}".format(key, value))
+    for key, value in errors_dict.items():
+        the_report = holding_dict[key]
+        with open('errors_report.csv', 'a+', newline='') as csvfile:
+            the_row = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+            the_row.writerows(the_report)
+            csvfile.close()
+
+
+run_command_prompt()
+process_files(zip_files, 15000)
 run_info()
-
-
-print("")
-print("")
-print("\t*** *** ERROR REPORT *** ***")
-for key, value in errors_dict.items():
-    print("File:  {}\t\t\t\tERROR:  {}".format(key, value))
-
-
-
-#################### GOOD TO ADD TO PRIMARY #############################
-for key, value in errors_dict.items():
-    the_report = holding_dict[key]
-    with open('errors_report.csv', 'a+', newline='') as csvfile:
-        the_row = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
-        the_row.writerows(the_report)
-        csvfile.close()
+error_info()
+# This will run the function above
+#       zip_files = are the files folder names that you would like to pass through this.
+#       write_when = When this number of row is reached, the holding dict will save the rows to file
