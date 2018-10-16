@@ -7,8 +7,8 @@ import time
 
 
 # Folder Pointers
-#file_r_folder = 'test_read_data/'  # read from here
-#file_w_folder = 'test_write_data/'  # write to here
+# file_r_folder = 'test_read_data/' # read from here
+# file_w_folder = 'test_write_data/' # write to here
 file_r_folder = 'data/'  # read from here
 file_w_folder = 'write_data/'  # write to here
 
@@ -18,12 +18,11 @@ header = ['datetime', 'register_no', 'emp_no', 'trans_no', 'upc',
           'quantity', 'Scale', 'cost', 'unitPrice', 'total',
           'regPrice', 'altPrice', 'tax', 'taxexempt', 'foodstamp',
           'wicable', 'discount', 'memDiscount', 'discountable', 'discounttype',
-            'voided', 'percentDiscount', 'ItemQtty', 'volDiscType', 'volume',
+          'voided', 'percentDiscount', 'ItemQtty', 'volDiscType', 'volume',
           'VolSpecial', 'mixMatch', 'matched', 'memType', 'staff',
           'numflag', 'itemstatus', 'tenderstatus', 'charflag', 'varflag',
           'batchHeaderID', 'local', 'organic', 'display', 'receipt',
           'card_no', 'store', 'branch', 'match_id', 'trans_id']
-
 
 holding_dict = defaultdict(list)
 time_dict = defaultdict(list)
@@ -52,7 +51,7 @@ def clear_w_folder():
     for this_file in write_folder:
         this_file = ("{}{}".format(file_w_folder, this_file))
         os.remove(this_file)
-    time.sleep(5)
+    time.sleep(2)
 
 
 def run_command_prompt():
@@ -60,25 +59,26 @@ def run_command_prompt():
     print("Hello, and welcome!")
     write_folder_len = len(os.listdir(file_w_folder))
     if write_folder_len > 0:
-        time.sleep(1)
+        time.sleep(.25)
         print("Before we get started, I need to take care of a few housekeeping items.")
-        time.sleep(1)
-        print("It looks like you have {} files in the 'WRITE TO ' location:\t\t*** {} ***".format(write_folder_len, file_w_folder))
-        time.sleep(1)
+        time.sleep(.25)
+        print("It looks like you have {} files in the 'WRITE TO ' location:\t\t*** {} ***".format(write_folder_len,
+                                                                                                  file_w_folder))
+        time.sleep(.25)
         while True:
             try:
                 to_clear = input("\nDo you want me to REMOVE these files? (Y/N)   : ").lower()
-                time.sleep(1)
-                if to_clear == 'y' or to_clear== 'yes':
+                time.sleep(.25)
+                if to_clear == 'y' or to_clear == 'yes':
                     while True:
                         confirm = input("Are you sure you want to DELETE these files permanently? (Y/N)   : ").lower()
                         try:
                             if confirm == 'y' or confirm == 'yes':
-                                for i in [3,2,1]:
-                                    time.sleep(1)
+                                for i in [3, 2, 1]:
+                                    time.sleep(.5)
                                     print("\t\t\t\t{}".format(i))
                                 clear_w_folder()
-                                time.sleep(1)
+                                time.sleep(.5)
                                 print("Your files have been successfully deleted.")
                                 break
                             elif confirm == 'n' or confirm == 'no':
@@ -98,7 +98,8 @@ def run_command_prompt():
             except ValueError:
                 print("error")
             print("\nThank You.\n")
-            print("\nStarting Run\n")
+            print("\n*** Starting Run ***\n\n\n\n\n\n\n")
+            time.sleep(2)
             break
 
 
@@ -150,7 +151,7 @@ def save_this(data_matrix, in_holding_mod):
             the_row = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
             the_row.writerows(data_matrix)
             csvfile.close()
-    else: #Will Add a header
+    else: # Will Add a header
         with open(file_w_folder + this_file, 'a+', newline='') as csvfile:
             the_row = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
             the_row.writerow(header)
@@ -171,7 +172,7 @@ def hold_this(mod, line, write_when):
         holding_dict[mod].append(line)  # puts the line in holding cell
 
 
-def eff_prepare_rows(idx, line, input_file, this_delimiter, write_when):
+def prepare_rows(idx, line, input_file, this_delimiter, write_when):
     line_length = len(line)
     quarter = ''
     if line_length != 50:
@@ -204,41 +205,6 @@ def eff_prepare_rows(idx, line, input_file, this_delimiter, write_when):
         hold_this(mod, line, write_when)
 
 
-def prepare_rows(idx, line, input_file, this_delimiter, write_when):
-    line_length = len(line)
-    if line_length != 50:
-        irregular_line_fix(line)
-        this_error = [("*** IRREGULAR LINE ***\t\tFILE:  {}\t\tIDX:  {}".format(file_name, idx))]
-        errors_dict[input_file].append(this_error)
-    else:
-        pass
-    if line[45:46] != ['card_no']:  # Will pass all items that are not card #3.
-        if line[45:46] != ['3']:  # This will sort, place in holding, and save the row.
-            cardNo = int(line[45])
-            mod = cardNo % 171 + 1
-            hold_this(mod, line, write_when)
-        else:  # This code will designate what to do with 'card_no'== 3
-            date = line[0]
-            year = str(date[2:4])
-            month = int(date[5:7])
-            if month >= 1 and month <= 3:
-                quarter = '01'
-            elif month >= 4 and month <= 6:
-                quarter = '02'
-            elif month >= 7 and month <= 9:
-                quarter = '03'
-            elif month >= 10 and month <= 12:
-                quarter = '04'
-            else:
-                this_error = [("*** ERROR ON QUARTER ***\nFILE:  {}\nIDX:  {}".format(input_file, idx))]
-                errors_dict[input_file].append(this_error)
-            mod = (year + quarter)
-            mod = int(mod)
-            hold_this(mod, line, write_when)
-    else:  # This will not save the file as it is a HEADER row.
-        pass
-
-
 def purge_save_holding(holding_dict):
     last_holdings = []
     for key in holding_dict.keys():
@@ -246,9 +212,7 @@ def purge_save_holding(holding_dict):
     for idx, mod in enumerate(last_holdings):
         the_file = holding_dict[mod]
         save_this(the_file, mod)
-        time.sleep(.25)
         del holding_dict[mod]
-        time.sleep(.25)
 
 
 def row_irregularity_checker():
@@ -312,14 +276,14 @@ def process_files(zip_files = zip_files, write_when = 15000):
             zipped_files = zf.namelist()
             for file_name in zipped_files:
                 input_file = zf.open(file_name, 'r')
-                input_file = io.TextIOWrapper(input_file, encoding="utf-8")
+                input_file = io.TextIOWrapper(input_file, encoding = "utf-8")
                 this_delimiter = delimiters[file_name]
                 file_start_time_stamp(file_name)
                 for idx, line in enumerate(input_file):
                     line = (line.strip().split(this_delimiter))
                     line = remove_quotes(line)  # Remove "'Double Quotes'"
-                    eff_prepare_rows(idx, line, input_file, this_delimiter, write_when)
-                    if file_r_folder == 'data/' and idx >= 20000:
+                    prepare_rows(idx, line, input_file, this_delimiter, write_when)
+                    if file_r_folder != 'data/' and idx >= 20000:
                         break
                     else:
                         pass
@@ -334,10 +298,10 @@ def run_info():
         print("File:  WedgeFile_{}.csv\t\t\t\tTotal Rows:  {}".format(format(int(key), "04"), format(int(value), "03")))
     print("\n\n\t*** FILE NAME *** \t\t\t\t\t*** Total Times File Was Opened & Saved To ***")
     for key, value in written_to_dict.items():
-        print("FILE:  {}\t\t\t\tTimes Opened to Save: {}".format(key,value))
+        print("FILE:  {}\t\t\t\tTimes Opened to Save: {}".format(key, value))
     print("\n\n\t*** FILE NAME *** \t\t\t\t\t\t\t\t\t*** START PROCESSING TIME ***\t\t*** END PROCESSING TIME ***")
     for key, value in time_dict.items():
-        print("FILE:  {}\t\t\t\t\t\t\t\t{}".format(key,value))
+        print("FILE:  {}\t\t\t\t\t\t\t\t{}".format(key, value))
 
 
 def error_info():
@@ -346,8 +310,8 @@ def error_info():
         print("File:  {}\t\t\t\tERROR:  {}".format(key, value))
     for key, value in errors_dict.items():
         the_report = holding_dict[key]
-        with open('errors_report.csv', 'a+', newline='') as csvfile:
-            the_row = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+        with open('errors_report.csv', 'a+', newline = '') as csvfile:
+            the_row = csv.writer(csvfile, delimiter = ',', quoting = csv.QUOTE_MINIMAL)
             the_row.writerows(the_report)
             csvfile.close()
 
