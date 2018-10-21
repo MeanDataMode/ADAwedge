@@ -5,6 +5,7 @@ from zipfile import ZipFile  # https://docs.python.org/3.4/library/zipfile.html
 from collections import defaultdict
 import time
 
+
 header = ['datetime', 'register_no', 'emp_no', 'trans_no', 'upc',
           'description', 'trans_type', 'trans_subtype', 'trans_status', 'department',
           'quantity', 'Scale', 'cost', 'unitPrice', 'total',
@@ -22,16 +23,17 @@ holding_dict = defaultdict(list)    # Holds The Lines that have been processed, 
 time_dict = defaultdict(list)       # Records the time the input file was opened.
 written_to_dict = defaultdict(int)  # Counts times the saved files has been opened and saved to.
 counter_dict = defaultdict(int)     # Counts times number of rows have been pared and designated to the saved file
-card_no_dict = defaultdict(lambda: defaultdict(int))
+card_no_dict = defaultdict(lambda: defaultdict(int))  # Counts rows saved per CardNo
 errors_dict = defaultdict(list)     # Records the exceptions and errors that occur when processing.
 delimiters = dict()
 
 
 # Folder Pointers
-read_from_folder = 'test_read_data/' # read from here
-write_to_folder = 'test_write_data/' # write to here
-# file_r_folder = 'data/'  # read from here
-# write_to_folder = 'write_data/'  # write to here
+read_from_folder = 'test_read_data/'  # read from here
+write_to_folder = 'test_write_data/'  # write to here
+#read_from_folder = 'data/'  # read from here
+#write_to_folder = 'write_data2/'  # write to here
+
 
 # Gets the delimiters of the files
 zip_file_folder = os.listdir(read_from_folder)
@@ -44,6 +46,7 @@ for this_zip_file in zip_file_folder:
             dialect = csv.Sniffer().sniff(sample=the_input_file.readline(),
                                           delimiters=[",", ";", "\t"])
             delimiters[the_file_name] = dialect.delimiter
+            os.SEEK_SET
             the_input_file.close()  # tidy up
 
 
@@ -100,7 +103,7 @@ def run_command_prompt():
                         except ValueError:
                             print("error")
                 elif to_clear == 'n' or to_clear == 'no':
-                    print("\n*** Starting Run ***\n\n\n\n\n")
+                    print("\n\t\t\t*** Starting Run ***\n\n\n\n\n")
                     break
                 else:
                     print("Sorry, I didn't understand that.")
@@ -108,7 +111,7 @@ def run_command_prompt():
             except ValueError:
                 print("error")
             print("\nThank You!\n")
-            print("\n*** Starting Run ***\n\n\n\n\n")
+            print("\n\t\t\t*** Starting Run ***\n\n\n\n\n")
             time.sleep(2)
             break
 
@@ -273,11 +276,11 @@ def prepare_rows(idx, line, file_name, write_when, write_to_folder):
     else:
         pass
     if line[45:46] != ['card_no'] and line[45:46] != ['3']:  # Will pass all items that are not card #3.
-        cardNo = int(line[45])
-        mod = cardNo % 171 + 1
-        hold_this(mod, line, write_when, write_to_folder, cardNo)
+        cardno = int(line[45])
+        mod = cardno % 171 + 1
+        hold_this(mod, line, write_when, write_to_folder, cardno)
     elif line[45:46] != ['card_no']:  # This code will designate what to do with 'card_no'== 3
-        cardNo = int(line[45])
+        cardno = int(line[45])
         date = line[0]
         year = str(date[2:4])
         month = int(date[5:7])
@@ -293,13 +296,13 @@ def prepare_rows(idx, line, file_name, write_when, write_to_folder):
             pass
         mod = (year + quarter)
         mod = int(mod)
-        hold_this(mod, line, write_when, write_to_folder, cardNo)
+        hold_this(mod, line, write_when, write_to_folder, cardno)
 
 
 # Comments Complete
 # Function is ABOVE:  process_files()
 # Function is BELOW:  save_this()
-def purge_save_holding(write_to_folder, holding_dict = holding_dict):
+def purge_save_holding(write_to_folder, holding_dict=holding_dict):
     # Purpose:
     #   This function will save items within the dictionary 'holding_dict'
     #   at the end of processing all files.
@@ -322,7 +325,7 @@ def purge_save_holding(write_to_folder, holding_dict = holding_dict):
 # Comments Complete
 # Function is BELOW:  -na-
 # Function is ABOVE:  process_files()
-def time_stamp(file_name, event, time_dict = time_dict):
+def time_stamp(file_name, event, time_dict=time_dict):
     # Purpose:
     #   To add a time stamp to the 'time_dict'
     # Variables:
@@ -383,13 +386,13 @@ def row_irregularity_checker():
                         pass
                 time_stamp(file_name, 'Close File in Irregular File Checker')
                 input_file.close()
-    print("\n\n*** DONE ***\n\n")
+    print("\n\n\t\t\t*** DONE ***\n\n")
 
 
 # Comments Complete
 # Function is BELOW:  time_stamp(), remove_quotes(), prepare_rows(), purge_save_holding()
 # Function is ABOVE:  file_contain_nrows(), file_open_counter(), file_processing_time(), error_info()
-def process_files(write_when = 1500, break_at = 60000000):
+def process_files(write_when=1500, break_at=60000000):
     # Purpose:
     #   The Master Mind that coordinates the many functions of the processing.
     #   Calling this function will initiate the processing
@@ -413,6 +416,8 @@ def process_files(write_when = 1500, break_at = 60000000):
                 input_file = zf.open(file_name, 'r')
                 input_file = io.TextIOWrapper(input_file, encoding="utf-8")
                 this_delimiter = delimiters[file_name]
+                input_file.seek(0)
+                print("")
                 time_stamp(file_name, 'Open File')
                 for idx, line in enumerate(input_file):
                     line = (line.strip().split(this_delimiter))
@@ -422,10 +427,10 @@ def process_files(write_when = 1500, break_at = 60000000):
                         break
                     else:
                         pass
-                time_stamp(file_name, '**Close File')
+                time_stamp(file_name, 'Close File')
                 input_file.close()
-    purge_save_holding(write_to_folder, holding_dict = holding_dict)
-    print("\n*** FILE PROCESSING COMPLETE ***\n\n")
+    purge_save_holding(write_to_folder, holding_dict=holding_dict)
+    print("\n\t\t\t*** FILE PROCESSING COMPLETE ***\n\n")
     file_contain_nrows()
     file_open_counter()
     file_processing_time()
@@ -433,10 +438,39 @@ def process_files(write_when = 1500, break_at = 60000000):
     error_info()
 
 
+def save_list_report(the_dict_to_save, name_to_save_report_as, file_head):
+    holding_list = []
+    for key in sorted(the_dict_to_save.keys()):
+        holding_list += [key]
+        file_content = the_dict_to_save[key]
+        with open(name_to_save_report_as, 'a+', newline='') as csvfile:
+            the_row = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+            the_row.writerow(file_head)
+            the_row.writerows(file_content)
+            csvfile.close()
+    time.sleep(1)
+    print("SAVE Successful!\t\t\tFILE:\t{}".format(name_to_save_report_as))
+
+
+def save_counting_report(the_dict_to_save, name_to_save_report_as, file_head):
+    final_count_dict = defaultdict(list)
+    for key, value in sorted(the_dict_to_save.items()):
+        this_count = ("{},{}".format(key, value))
+        this_count = this_count.split(sep=",")
+        final_count_dict['counter'].append(this_count)
+        file_content = final_count_dict['counter']
+    with open(name_to_save_report_as, 'a+', newline='') as csvfile:
+        the_row = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+        the_row.writerow(file_head)
+        the_row.writerows(file_content)
+        csvfile.close()
+    print("SAVE Successful!\t\t\tFILE:\t{}".format(name_to_save_report_as))
+
+
 # Comments Complete
 # Function is BELOW:  process_files()
 # Function is ABOVE:  -na-
-def rows_per_card_no(the_dict_to_save = card_no_dict, name_to_save_report_as = 'Rows_per_Card_No.csv'):
+def rows_per_card_no(the_dict_to_save=card_no_dict):
     # Purpose:
     #   saves the number of times an output file was opened and saved to.
     #   Can be useful when trying to decide how many lines to write at one.
@@ -446,9 +480,9 @@ def rows_per_card_no(the_dict_to_save = card_no_dict, name_to_save_report_as = '
     #   process_files() <reports errors from this run>
     # Is used by the following functions to run:
     #   -na-
+    date_time_stamp = (time.strftime("%Y%m%d %H%M", (time.localtime())))
+    name_to_save_report_as = ("Run Reports/{} Rows per CardNo.csv".format(date_time_stamp))
     final_count_dict = defaultdict(list)
-    if name_to_save_report_as in os.listdir():
-        os.remove(name_to_save_report_as)
     for key1, value1 in sorted(the_dict_to_save.items()):
         for key2, value2 in sorted(value1.items()):
             this_count = ("{},{},{}".format(key1, key2, value2))
@@ -457,16 +491,16 @@ def rows_per_card_no(the_dict_to_save = card_no_dict, name_to_save_report_as = '
             the_file = final_count_dict['counter']
     with open(name_to_save_report_as, 'a+', newline='') as csvfile:
         the_row = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
-        the_row.writerow(["File","Card No.","Rows Associated with Card No."])
+        the_row.writerow(["File","Card No.","Rows in File Associated with Card No."])
         the_row.writerows(the_file)
         csvfile.close()
-    print("FILE:\t{}\t\t\t\tSAVE Successful!".format(name_to_save_report_as))
+    print("SAVE Successful!\t\t\tFILE:\t{}".format(name_to_save_report_as))
 
 
 # Comments Complete
 # Function is BELOW:  process_files()
 # Function is ABOVE:  -na-
-def file_open_counter(the_dict_to_save = written_to_dict, name_to_save_report_as = 'File_Open_Counter.csv'):
+def file_open_counter(the_dict_to_save=written_to_dict):
     # Purpose:
     #   saves the number of times an output file was opened and saved to.
     #   Can be useful when trying to decide how many lines to write at one.
@@ -476,26 +510,16 @@ def file_open_counter(the_dict_to_save = written_to_dict, name_to_save_report_as
     #   process_files() <reports errors from this run>
     # Is used by the following functions to run:
     #   -na-
-    final_count_dict = defaultdict(list)
-    if name_to_save_report_as in os.listdir():
-        os.remove(name_to_save_report_as)
-    for key, value in the_dict_to_save.items():
-        this_count = ("{},{}".format(key, value))
-        this_count = this_count.split(sep=",")
-        final_count_dict['counter'].append(this_count)
-        the_file = final_count_dict['counter']
-    with open(name_to_save_report_as, 'a+', newline='') as csvfile:
-        the_row = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
-        the_row.writerow(["File","Times File Opened and Saved To"])
-        the_row.writerows(the_file)
-        csvfile.close()
-    print("FILE:\t{}\t\t\t\tSAVE Successful!".format(name_to_save_report_as))
+    file_head = ["File","Times File Opened and Saved To"]
+    date_time_stamp = (time.strftime("%Y%m%d %H%M", (time.localtime())))
+    name_to_save_report_as = ("Run Reports/{} File Open Counter.csv".format(date_time_stamp))
+    save_counting_report(the_dict_to_save, name_to_save_report_as, file_head)
 
 
 # Comments Complete
 # Function is BELOW:  process_files()
 # Function is ABOVE:  -na-
-def file_contain_nrows(the_dict_to_save = counter_dict, name_to_save_report_as = 'File_Row_Counts.csv'):
+def file_contain_nrows(the_dict_to_save=counter_dict):
     # Purpose:
     #   saves the number of rows within a file.
     # Variables:
@@ -504,26 +528,16 @@ def file_contain_nrows(the_dict_to_save = counter_dict, name_to_save_report_as =
     #   process_files() <reports errors from this run>
     # Is used by the following functions to run:
     #   -na-
-    final_count_dict = defaultdict(list)
-    if name_to_save_report_as in os.listdir():
-        os.remove(name_to_save_report_as)
-    for key, value in the_dict_to_save.items():
-        this_count = ("{},{}".format(key, value))
-        this_count = this_count.split(sep=",")
-        final_count_dict['counter'].append(this_count)
-        the_file = final_count_dict['counter']
-    with open(name_to_save_report_as, 'a+', newline='') as csvfile:
-        the_row = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
-        the_row.writerow(["File","Count of Rows in File"])
-        the_row.writerows(the_file)
-        csvfile.close()
-    print("FILE:\t{}\t\t\t\t\tSAVE Successful!".format(name_to_save_report_as))
+    file_head = ["File","Count of Rows in File"]
+    date_time_stamp = (time.strftime("%Y%m%d %H%M", (time.localtime())))
+    name_to_save_report_as = ("Run Reports/{} File Row Counts.csv".format(date_time_stamp))
+    save_counting_report(the_dict_to_save, name_to_save_report_as, file_head)
 
 
 # Comments Complete
 # Function is BELOW:  process_files()
 # Function is ABOVE:  -na-
-def file_processing_time(the_dict_to_save = time_dict, name_to_save_report_as = 'File_Processing_Times.csv'):
+def file_processing_time(the_dict_to_save=time_dict):
     # Purpose:
     #   Saves the time a file is opened as well as closed.
     # Variables:
@@ -532,24 +546,16 @@ def file_processing_time(the_dict_to_save = time_dict, name_to_save_report_as = 
     #   process_files() <reports errors from this run>
     # Is used by the following functions to run:
     #   -na-
-    if name_to_save_report_as in os.listdir():
-        os.remove(name_to_save_report_as)
-    holding = []
-    for key in the_dict_to_save.keys():
-        holding += [key]
-        the_file = the_dict_to_save[key]
-        with open(name_to_save_report_as, 'a+', newline='') as csvfile:
-            the_row = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
-            the_row.writerow(["File","Event","Date Stamp", "Time Stamp"])
-            the_row.writerows(the_file)
-            csvfile.close()
-    print("FILE:\t{}\t\t\tSAVE Successful!".format(name_to_save_report_as))
+    file_head = ["File","Event","Date Stamp", "Time Stamp"]
+    date_time_stamp = (time.strftime("%Y%m%d %H%M", (time.localtime())))
+    name_to_save_report_as = ("Run Reports/{} File Processing Times.csv".format(date_time_stamp))
+    save_list_report(the_dict_to_save, name_to_save_report_as, file_head)
 
 
 # Comments Complete
 # Function is BELOW:  process_files()
 # Function is ABOVE:  -na-
-def error_info(the_dict_to_save = errors_dict, name_to_save_report_as = 'Exceptions_and_Error_Report.csv'):
+def error_info(the_dict_to_save=errors_dict):
     # Purpose:
     #   saves the exceptions to 'exceptions_and_error_report.csv'
     #   If no errors are saved to dict, then no file will output
@@ -559,21 +565,10 @@ def error_info(the_dict_to_save = errors_dict, name_to_save_report_as = 'Excepti
     #   process_files() <reports errors from this run>
     # Is used by the following functions to run:
     #   -na-
-    if name_to_save_report_as in os.listdir():
-        os.remove(name_to_save_report_as)
-    holding1 = []
-    for key in errors_dict.keys():
-        holding1 += [key]
-        the_file1 = errors_dict[key]
-        with open(name_to_save_report_as, 'a+', newline='') as csvfile:
-            the_row = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
-            the_row.writerow(["File","IDX","Event","Line"])
-            the_row.writerows(the_file1)
-            csvfile.close()
-    if name_to_save_report_as in os.listdir():
-        print("FILE:\t{}\t\tSAVE Successful!".format(name_to_save_report_as))
-    else:
-        print("\n\t\tNO Exceptions or errors to report!\n\n".format(name_to_save_report_as))
+    file_head = ["File", "Event", "Date Stamp", "Time Stamp"]
+    date_time_stamp = (time.strftime("%Y%m%d %H%M", (time.localtime())))
+    name_to_save_report_as = ("Run Reports/{} Exceptions and Error Report.csv".format(date_time_stamp))
+    save_list_report(the_dict_to_save, name_to_save_report_as, file_head)
 
 
-process_files(write_when = 13000, break_at = 60000000)
+process_files(write_when=10, break_at=600)
