@@ -1,3 +1,6 @@
+# Written by Tony Layton
+# Oct 21, 2018
+#
 import os  # https://docs.python.org/3/library/os.html
 import io
 import csv  # https://docs.python.org/3.4/library/csv.html
@@ -6,6 +9,7 @@ from collections import defaultdict
 import time
 
 
+# Headers for the output files.
 header = ['datetime', 'register_no', 'emp_no', 'trans_no', 'upc',
           'description', 'trans_type', 'trans_subtype', 'trans_status', 'department',
           'quantity', 'Scale', 'cost', 'unitPrice', 'total',
@@ -29,10 +33,10 @@ delimiters = dict()
 
 
 # Folder Pointers
-read_from_folder = 'test_read_data/'  # read from here
-write_to_folder = 'test_write_data/'  # write to here
-#read_from_folder = 'data/'  # read from here
-#write_to_folder = 'write_data2/'  # write to here
+#read_from_folder = 'test_read_data/'  # read from here
+#write_to_folder = 'test_write_data/'  # write to here
+read_from_folder = 'data/'  # read from here
+write_to_folder = 'write_data/'  # write to here
 
 
 # Gets the delimiters of the files
@@ -50,7 +54,6 @@ for this_zip_file in zip_file_folder:
             the_input_file.close()  # tidy up
 
 
-# Comments Complete
 # Function is BELOW:  -na-
 # Function is ABOVE:  -na-
 def run_command_prompt():
@@ -103,7 +106,7 @@ def run_command_prompt():
                         except ValueError:
                             print("error")
                 elif to_clear == 'n' or to_clear == 'no':
-                    print("\n\t\t\t*** Starting Run ***\n\n\n\n\n")
+                    print("\n\t\t\t*** Starting File Processing ***\n\n\n\n\n")
                     break
                 else:
                     print("Sorry, I didn't understand that.")
@@ -111,28 +114,11 @@ def run_command_prompt():
             except ValueError:
                 print("error")
             print("\nThank You!\n")
-            print("\n\t\t\t*** Starting Run ***\n\n\n\n\n")
-            time.sleep(2)
             break
+    print("\n\t\t\t*** Starting File Processing ***\n\n\n\n\n")
+    time.sleep(2)
 
 
-run_command_prompt()
-
-
-zip_file_folder = os.listdir(read_from_folder)
-for this_zip_file in zip_file_folder:
-    with ZipFile(read_from_folder + this_zip_file, 'r') as the_zip_file:
-        the_zipped_files = the_zip_file.namelist()
-        for the_file_name in the_zipped_files:
-            the_input_file = the_zip_file.open(the_file_name, 'r')
-            the_input_file = io.TextIOWrapper(the_input_file, encoding="utf-8")
-            dialect = csv.Sniffer().sniff(sample=the_input_file.readline(),
-                                          delimiters=[",", ";", "\t"])
-            delimiters[the_file_name] = dialect.delimiter
-            the_input_file.close()  # tidy up
-
-
-# Comments Complete
 # Function is BELOW:  -na-
 # Function is ABOVE:  process_files()
 def remove_quotes(line):
@@ -159,7 +145,7 @@ def remove_quotes(line):
             cleaned.append(item)
     return cleaned
 
-# Comments Complete
+
 # Function is BELOW:  -na-
 # Function is ABOVE:  prepare_rows()
 def irregular_line_fix(irregular_line):
@@ -182,7 +168,6 @@ def irregular_line_fix(irregular_line):
     return irregular_line
 
 
-# Comments Complete
 # Function is BELOW:  -na-
 # Function is ABOVE:  hold_this(), purge_save_holding()
 def save_this(data_matrix, in_holding_mod, write_to_folder):
@@ -213,7 +198,6 @@ def save_this(data_matrix, in_holding_mod, write_to_folder):
             csvfile.close()
 
 
-# Comments Complete
 # Function is BELOW:  save this()
 # Function is ABOVE:  prepare_rows()
 def hold_this(mod, line, write_when, write_to_folder, card_no):
@@ -245,7 +229,6 @@ def hold_this(mod, line, write_when, write_to_folder, card_no):
         holding_dict[mod].append(line)
 
 
-# Comments Complete
 # Function is BELOW:  hold_this(), irregular_line_fix()
 # Function is ABOVE:  process_files()
 def prepare_rows(idx, line, file_name, write_when, write_to_folder):
@@ -299,7 +282,6 @@ def prepare_rows(idx, line, file_name, write_when, write_to_folder):
         hold_this(mod, line, write_when, write_to_folder, cardno)
 
 
-# Comments Complete
 # Function is ABOVE:  process_files()
 # Function is BELOW:  save_this()
 def purge_save_holding(write_to_folder, holding_dict=holding_dict):
@@ -322,7 +304,6 @@ def purge_save_holding(write_to_folder, holding_dict=holding_dict):
         del holding_dict[mod]
 
 
-# Comments Complete
 # Function is BELOW:  -na-
 # Function is ABOVE:  process_files()
 def time_stamp(file_name, event, time_dict=time_dict):
@@ -345,7 +326,6 @@ def time_stamp(file_name, event, time_dict=time_dict):
     print(write_this)
 
 
-# Comments Complete
 # Function is BELOW:  time_stamp(), remove_quotes()
 # Function is ABOVE:  process_files()
 def row_irregularity_checker():
@@ -389,7 +369,6 @@ def row_irregularity_checker():
     print("\n\n\t\t\t*** DONE ***\n\n")
 
 
-# Comments Complete
 # Function is BELOW:  time_stamp(), remove_quotes(), prepare_rows(), purge_save_holding()
 # Function is ABOVE:  file_contain_nrows(), file_open_counter(), file_processing_time(), error_info()
 def process_files(write_when=1500, break_at=60000000):
@@ -438,7 +417,19 @@ def process_files(write_when=1500, break_at=60000000):
     error_info()
 
 
+# Function is BELOW:  file_processing_time(),error_info()
+# Function is ABOVE:  -na-
 def save_list_report(the_dict_to_save, name_to_save_report_as, file_head):
+    # Purpose:
+    #   saves list dicts into a csv.
+    # Variables:
+    #   the_dict_to_save = the dict to save.
+    #   name_to_save_report_as = the name of the saved output file.
+    #   file_head = The Header in the file
+    # Uses the following functions to run:
+    #   process_files() <reports errors from this run>
+    # Is used by the following functions to run:
+    #   -na-
     holding_list = []
     for key in sorted(the_dict_to_save.keys()):
         holding_list += [key]
@@ -449,10 +440,22 @@ def save_list_report(the_dict_to_save, name_to_save_report_as, file_head):
             the_row.writerows(file_content)
             csvfile.close()
     time.sleep(1)
-    print("SAVE Successful!\t\t\tFILE:\t{}".format(name_to_save_report_as))
+    print("\tSAVE Successful!\t\tFILE:\t{}".format(name_to_save_report_as))
 
 
+# Function is BELOW:  file_contain_nrows(), file_contain_nrows
+# Function is ABOVE:  -na-
 def save_counting_report(the_dict_to_save, name_to_save_report_as, file_head):
+    # Purpose:
+    #   saves counting dicts into a csv.
+    # Variables:
+    #   the_dict_to_save = the dict to save.
+    #   name_to_save_report_as = the name of the saved output file.
+    #   file_head = The Header in the file
+    # Uses the following functions to run:
+    #   process_files() <reports errors from this run>
+    # Is used by the following functions to run:
+    #   -na-
     final_count_dict = defaultdict(list)
     for key, value in sorted(the_dict_to_save.items()):
         this_count = ("{},{}".format(key, value))
@@ -464,10 +467,9 @@ def save_counting_report(the_dict_to_save, name_to_save_report_as, file_head):
         the_row.writerow(file_head)
         the_row.writerows(file_content)
         csvfile.close()
-    print("SAVE Successful!\t\t\tFILE:\t{}".format(name_to_save_report_as))
+    print("\tSAVE Successful!\t\tFILE:\t{}".format(name_to_save_report_as))
 
 
-# Comments Complete
 # Function is BELOW:  process_files()
 # Function is ABOVE:  -na-
 def rows_per_card_no(the_dict_to_save=card_no_dict):
@@ -494,12 +496,11 @@ def rows_per_card_no(the_dict_to_save=card_no_dict):
         the_row.writerow(["File","Card No.","Rows in File Associated with Card No."])
         the_row.writerows(the_file)
         csvfile.close()
-    print("SAVE Successful!\t\t\tFILE:\t{}".format(name_to_save_report_as))
+    print("\tSAVE Successful!\t\tFILE:\t{}".format(name_to_save_report_as))
 
 
-# Comments Complete
 # Function is BELOW:  process_files()
-# Function is ABOVE:  -na-
+# Function is ABOVE:  save_counting_report()
 def file_open_counter(the_dict_to_save=written_to_dict):
     # Purpose:
     #   saves the number of times an output file was opened and saved to.
@@ -516,9 +517,8 @@ def file_open_counter(the_dict_to_save=written_to_dict):
     save_counting_report(the_dict_to_save, name_to_save_report_as, file_head)
 
 
-# Comments Complete
 # Function is BELOW:  process_files()
-# Function is ABOVE:  -na-
+# Function is ABOVE:  save_counting_report
 def file_contain_nrows(the_dict_to_save=counter_dict):
     # Purpose:
     #   saves the number of rows within a file.
@@ -534,9 +534,8 @@ def file_contain_nrows(the_dict_to_save=counter_dict):
     save_counting_report(the_dict_to_save, name_to_save_report_as, file_head)
 
 
-# Comments Complete
 # Function is BELOW:  process_files()
-# Function is ABOVE:  -na-
+# Function is ABOVE:  save_list_report
 def file_processing_time(the_dict_to_save=time_dict):
     # Purpose:
     #   Saves the time a file is opened as well as closed.
@@ -552,9 +551,8 @@ def file_processing_time(the_dict_to_save=time_dict):
     save_list_report(the_dict_to_save, name_to_save_report_as, file_head)
 
 
-# Comments Complete
 # Function is BELOW:  process_files()
-# Function is ABOVE:  -na-
+# Function is ABOVE:  save_list_report
 def error_info(the_dict_to_save=errors_dict):
     # Purpose:
     #   saves the exceptions to 'exceptions_and_error_report.csv'
@@ -571,4 +569,5 @@ def error_info(the_dict_to_save=errors_dict):
     save_list_report(the_dict_to_save, name_to_save_report_as, file_head)
 
 
-process_files(write_when=10, break_at=600)
+run_command_prompt()
+process_files(write_when=20000, break_at=6000000000)
