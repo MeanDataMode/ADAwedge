@@ -1,4 +1,5 @@
-# Written by Tony Layton
+# Written by A.T. Layton
+#
 # Oct 21, 2018
 #
 import os  # https://docs.python.org/3/library/os.html
