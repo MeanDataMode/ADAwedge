@@ -33,8 +33,8 @@ delimiters = dict()
 
 
 # Folder Pointers
-#read_from_folder = 'test_read_data/'  # read from here
-#write_to_folder = 'test_write_data/'  # write to here
+# read_from_folder = 'test_read_data/'  # read from here
+# write_to_folder = 'test_write_data/'  # write to here
 read_from_folder = 'data/'  # read from here
 write_to_folder = 'write_data/'  # write to here
 
